@@ -6,3 +6,7 @@ The format is based on Keep a Changelog,
 and this project follows Semantic Versioning.
 
 ## [Unreleased]
+
+### Added
+
+- End-to-end CLI integration tests covering default invocation and `greet` output.

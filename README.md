@@ -16,3 +16,4 @@ Starter Rust CLI crate with testable command handling.
 
 - CI workflow at `.github/workflows/ci.yml` runs fmt, clippy, and tests.
 - Changelog tracking lives in `CHANGELOG.md`.
+- Integration tests in `tests/cli.rs` cover binary-level behavior.
