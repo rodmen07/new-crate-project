@@ -2,5 +2,9 @@
 name = "new-crate-project"
 version = "0.1.0"
 edition = "2024"
+description = "Starter CLI crate with testable command handling"
+license = "MIT"
 
 [dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
