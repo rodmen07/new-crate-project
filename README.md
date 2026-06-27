@@ -11,3 +11,8 @@ Starter Rust CLI crate with testable command handling.
 
 - `cargo test`
 - `cargo clippy --all-targets --all-features -- -D warnings`
+
+## Project Hygiene
+
+- CI workflow at `.github/workflows/ci.yml` runs fmt, clippy, and tests.
+- Changelog tracking lives in `CHANGELOG.md`.
