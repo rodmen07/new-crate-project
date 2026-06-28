@@ -131,6 +131,12 @@ pub enum Commands {
         #[arg(long)]
         focus: Option<String>,
     },
+    /// Start a local HTTP bridge server sidecar for calm-daily-coach
+    Serve {
+        /// Port to bind the HTTP server on
+        #[arg(long, default_value_t = 8787)]
+        port: u16,
+    },
 }
 
 pub fn build_day_plan_data(input: &PlanInput) -> DayPlan {
@@ -287,6 +293,10 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
             };
             ("plan".to_string(), build_day_plan(&input))
         }
+        Some(Commands::Serve { port }) => (
+            "serve".to_string(),
+            format!("Server started on port {port}"),
+        ),
         None => (
             "default".to_string(),
             "coachkit is ready. Run with --help for usage.".to_string(),
@@ -506,5 +516,91 @@ mod tests {
         assert_eq!(decoded.effort, EffortLevel::High);
         assert_eq!(decoded.stop.as_deref(), Some("17:30"));
         assert_eq!(decoded.priorities.len(), 2);
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum BridgeRequest {
+    Checkin {
+        mood: u8,
+        energy: u8,
+        friction: Option<String>,
+    },
+    Plan {
+        priorities: Vec<String>,
+        stop: Option<String>,
+        effort: Option<String>,
+        focus: Option<String>,
+    },
+}
+
+pub async fn start_server(port: u16) -> Result<()> {
+    use axum::{Router, routing::post};
+    use std::net::SocketAddr;
+    use tower_http::cors::{Any, CorsLayer};
+
+    let app = Router::new()
+        .route("/coach", post(handle_coach))
+        .route("/", post(handle_coach))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_headers(Any)
+                .allow_methods(Any),
+        );
+
+    let address = SocketAddr::from(([127, 0, 0, 1], port));
+    println!("Starting coachkit companion server on http://{}", address);
+    println!("CORS is active (allows any origin for local companion use).");
+
+    let listener = tokio::net::TcpListener::bind(address).await?;
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
+async fn handle_coach(
+    axum::Json(payload): axum::Json<BridgeRequest>,
+) -> impl axum::response::IntoResponse {
+    match payload {
+        BridgeRequest::Checkin {
+            mood,
+            energy,
+            friction,
+        } => {
+            let input = CheckinInput {
+                mood,
+                energy,
+                friction,
+            };
+            let advice = checkin_advice(&input);
+            axum::Json(serde_json::json!({
+                "request_type": "checkin",
+                "advice": advice,
+            }))
+        }
+        BridgeRequest::Plan {
+            priorities,
+            stop,
+            effort,
+            focus,
+        } => {
+            let core_effort = match effort.as_deref() {
+                Some("low") => EffortLevel::Low,
+                Some("high") => EffortLevel::High,
+                _ => EffortLevel::Medium,
+            };
+            let input = PlanInput {
+                priorities,
+                stop,
+                effort: core_effort,
+                focus,
+            };
+            let text_brief = build_day_plan(&input);
+            axum::Json(serde_json::json!({
+                "request_type": "plan",
+                "text_brief": text_brief,
+            }))
+        }
     }
 }

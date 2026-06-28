@@ -23,6 +23,15 @@ fn write_to_dir(dir: &std::path::Path, output: &str, format: OutputFormat) -> an
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
+
+    if let Some(coachkit::Commands::Serve { port }) = &cli.command {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()?;
+        rt.block_on(coachkit::start_server(*port))?;
+        return Ok(());
+    }
+
     let format = cli.format;
     let out_path = cli.out.clone();
     let out_dir = cli.out_dir.clone();
