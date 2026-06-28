@@ -70,8 +70,10 @@ All core domain structs and enums in the library API derive both `Serialize` and
 
 - `cargo run --example checkin_pipeline`
 - `cargo run --example plan_pipeline`
+- `echo '{"type":"checkin","mood":3,"energy":4,"friction":"task switching"}' | cargo run --example stdin_bridge`
 
 These examples show how to keep typed domain data for app state while still rendering user-facing text where needed.
+The stdin bridge example demonstrates how an app can send JSON payloads directly into library-backed planning/check-in flows.
 
 ## Project Hygiene
 

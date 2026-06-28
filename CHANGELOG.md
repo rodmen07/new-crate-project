@@ -22,3 +22,4 @@ and this project follows Semantic Versioning.
 - Typed structured APIs: `CheckinAdvice` with `CheckinStrategy`, plus `DayPlan` via `build_day_plan_data`.
 - Serde-ready domain models (`Serialize` + `Deserialize`) for easier app JSON round-tripping.
 - Integration examples for check-in and planning pipelines (`examples/checkin_pipeline.rs`, `examples/plan_pipeline.rs`).
+- Stdin JSON bridge example for direct app-to-library piping (`examples/stdin_bridge.rs`).
