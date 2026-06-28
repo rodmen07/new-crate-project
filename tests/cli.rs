@@ -44,3 +44,13 @@ fn sum_subcommand_without_values_defaults_to_zero() {
         .success()
         .stdout(predicate::str::contains("0"));
 }
+
+#[test]
+fn json_output_mode_prints_structured_response() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args(["--format", "json", "greet", "--name", "Copilot"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"command\": \"greet\""))
+        .stdout(predicate::str::contains("\"message\": \"Hello, Copilot!\""));
+}

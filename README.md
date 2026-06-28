@@ -8,6 +8,7 @@ Starter Rust CLI crate with testable command handling.
 - `new-crate-project greet --name <value>` prints a greeting.
 - `new-crate-project greet --name <value> --uppercase` prints an uppercase greeting.
 - `new-crate-project sum <values...>` prints the integer total (empty input prints `0`).
+- `--format json` emits structured JSON (`command`, `message`) instead of plain text.
 
 ## Development
 
