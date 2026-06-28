@@ -1,5 +1,5 @@
 use clap::Parser;
-use new_crate_project::{run, Cli};
+use new_crate_project::{Cli, run};
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();

@@ -17,3 +17,21 @@ fn greet_subcommand_prints_name() {
         .success()
         .stdout(predicate::str::contains("Hello, Copilot!"));
 }
+
+#[test]
+fn sum_subcommand_prints_total() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args(["sum", "10", "-3", "4"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("11"));
+}
+
+#[test]
+fn sum_subcommand_without_values_defaults_to_zero() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args(["sum"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("0"));
+}

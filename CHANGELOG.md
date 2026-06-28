@@ -10,3 +10,4 @@ and this project follows Semantic Versioning.
 ### Added
 
 - End-to-end CLI integration tests covering default invocation and `greet` output.
+- `sum` CLI subcommand for adding integer values.
