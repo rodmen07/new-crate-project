@@ -47,7 +47,9 @@ let plan = PlanInput {
 };
 let day_plan = build_day_plan_data(&plan);
 
-assert_eq!(advice.strategy as u8, advice.strategy as u8); // use strategy for app-side branching
+if matches!(advice.strategy, new_crate_project::CheckinStrategy::FrictionUnblock) {
+	println!("Create a short unblock step in the UI");
+}
 assert!(!day_plan.priorities.is_empty());
 ```
 
