@@ -1,5 +1,5 @@
 use anyhow::Result;
-use new_crate_project::{EffortLevel, PlanInput, build_day_plan_data, render_day_plan};
+use coachkit::{EffortLevel, PlanInput, build_day_plan_data, render_day_plan};
 
 fn main() -> Result<()> {
     let input = PlanInput {

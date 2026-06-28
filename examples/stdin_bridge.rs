@@ -1,5 +1,5 @@
 use anyhow::{Result, bail};
-use new_crate_project::{
+use coachkit::{
     CheckinInput, EffortLevel, PlanInput, build_day_plan_data, checkin_advice, render_day_plan,
 };
 use serde::Deserialize;

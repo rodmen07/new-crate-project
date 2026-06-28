@@ -7,6 +7,10 @@ and this project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed crate and binary from `new-crate-project` to `coachkit` for clearer representation of its companion purpose.
+
 ### Added
 
 - End-to-end CLI integration tests covering default invocation and `greet` output.

@@ -1,5 +1,5 @@
 use clap::Parser;
-use new_crate_project::{Cli, OutputFormat, render_output, run};
+use coachkit::{Cli, OutputFormat, render_output, run};
 
 fn write_to_dir(dir: &std::path::Path, output: &str, format: OutputFormat) -> anyhow::Result<()> {
     use std::time::{SystemTime, UNIX_EPOCH};

@@ -4,7 +4,7 @@ use std::fs;
 
 #[test]
 fn default_invocation_prints_readiness_message() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("ready"));
@@ -12,7 +12,7 @@ fn default_invocation_prints_readiness_message() {
 
 #[test]
 fn greet_subcommand_prints_name() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["greet", "--name", "Copilot"])
         .assert()
         .success()
@@ -21,7 +21,7 @@ fn greet_subcommand_prints_name() {
 
 #[test]
 fn greet_subcommand_uppercase_prints_shouty_message() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["greet", "--name", "Copilot", "--uppercase"])
         .assert()
         .success()
@@ -30,7 +30,7 @@ fn greet_subcommand_uppercase_prints_shouty_message() {
 
 #[test]
 fn sum_subcommand_prints_total() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["sum", "10", "-3", "4"])
         .assert()
         .success()
@@ -39,7 +39,7 @@ fn sum_subcommand_prints_total() {
 
 #[test]
 fn sum_subcommand_without_values_defaults_to_zero() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["sum"])
         .assert()
         .success()
@@ -48,7 +48,7 @@ fn sum_subcommand_without_values_defaults_to_zero() {
 
 #[test]
 fn json_output_mode_prints_structured_response() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["--format", "json", "greet", "--name", "Copilot"])
         .assert()
         .success()
@@ -58,7 +58,7 @@ fn json_output_mode_prints_structured_response() {
 
 #[test]
 fn version_subcommand_prints_version_text() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["version"])
         .assert()
         .success()
@@ -67,7 +67,7 @@ fn version_subcommand_prints_version_text() {
 
 #[test]
 fn version_subcommand_prints_version_json() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args(["--format", "json", "version"])
         .assert()
         .success()
@@ -77,7 +77,7 @@ fn version_subcommand_prints_version_json() {
 
 #[test]
 fn checkin_subcommand_prints_guidance() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "checkin",
         "--mood",
@@ -95,7 +95,7 @@ fn checkin_subcommand_prints_guidance() {
 
 #[test]
 fn checkin_subcommand_supports_json_output() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "--format", "json", "checkin", "--mood", "4", "--energy", "2",
     ])
@@ -107,7 +107,7 @@ fn checkin_subcommand_supports_json_output() {
 
 #[test]
 fn plan_subcommand_builds_day_plan() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "plan",
         "--priority",
@@ -130,7 +130,7 @@ fn plan_subcommand_builds_day_plan() {
 
 #[test]
 fn plan_subcommand_supports_json_output() {
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "--format",
         "json",
@@ -151,7 +151,7 @@ fn out_flag_writes_json_artifact_file() {
     let dir = tempfile::tempdir().unwrap();
     let out_file = dir.path().join("latest.json");
 
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "--format",
         "json",
@@ -176,7 +176,7 @@ fn out_dir_writes_latest_and_timestamped_artifacts() {
     let dir = tempfile::tempdir().unwrap();
     let out_dir = dir.path().join("artifacts");
 
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "--format",
         "json",
@@ -212,7 +212,7 @@ fn out_dir_writes_text_latest_and_timestamped_artifacts() {
     let dir = tempfile::tempdir().unwrap();
     let out_dir = dir.path().join("artifacts");
 
-    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    let mut cmd = Command::cargo_bin("coachkit").unwrap();
     cmd.args([
         "--out-dir",
         out_dir.to_str().unwrap(),

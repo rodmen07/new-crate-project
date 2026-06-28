@@ -1,5 +1,5 @@
 use anyhow::Result;
-use new_crate_project::{CheckinInput, CheckinStrategy, checkin_advice};
+use coachkit::{CheckinInput, CheckinStrategy, checkin_advice};
 
 fn main() -> Result<()> {
     let input = CheckinInput {

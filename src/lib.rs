@@ -63,7 +63,11 @@ pub struct DayPlan {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "new-crate-project", version, about = "A small starter CLI")]
+#[command(
+    name = "coachkit",
+    version,
+    about = "Routine check-in and daily planning companion"
+)]
 pub struct Cli {
     /// Select output format
     #[arg(long, value_enum, default_value_t = OutputFormat::Text, global = true)]
@@ -285,7 +289,7 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
         }
         None => (
             "default".to_string(),
-            "new-crate-project is ready. Run with --help for usage.".to_string(),
+            "coachkit is ready. Run with --help for usage.".to_string(),
         ),
     };
     Ok(RunOutput { command, message })

@@ -1,8 +1,8 @@
 [package]
-name = "new-crate-project"
+name = "coachkit"
 version = "0.1.0"
 edition = "2024"
-description = "Starter CLI crate with testable command handling"
+description = "Lightweight routine check-in and modular day-planning companion kit"
 license = "MIT"
 
 [dependencies]

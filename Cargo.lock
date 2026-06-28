@@ -152,6 +152,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
+name = "coachkit"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "predicates",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -234,19 +247,6 @@ name = "memchr"
 version = "2.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88904434abc2901f197fe8cc55f0445e7ded921dba5911dad2e2b39b48e663c4"
-
-[[package]]
-name = "new-crate-project"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "clap",
- "predicates",
- "serde",
- "serde_json",
- "tempfile",
-]
 
 [[package]]
 name = "normalize-line-endings"
