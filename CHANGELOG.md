@@ -17,3 +17,5 @@ and this project follows Semantic Versioning.
 - `checkin` subcommand with mood and energy prompts plus a next-step suggestion.
 - `plan` subcommand that compiles up to three priorities into a practical day plan.
 - Global `--out <file>` option to persist CLI output for app-side consumption.
+- Global `--out-dir <dir>` option that writes timestamped artifacts plus a stable `latest` file.
+- Library-first APIs (`CheckinInput`, `PlanInput`, `checkin_suggestion`, `build_day_plan`) for direct app integration.

@@ -170,3 +170,39 @@ fn out_flag_writes_json_artifact_file() {
     let file_contents = fs::read_to_string(out_file).unwrap();
     assert!(file_contents.contains("\"command\": \"checkin\""));
 }
+
+#[test]
+fn out_dir_writes_latest_and_timestamped_artifacts() {
+    let dir = tempfile::tempdir().unwrap();
+    let out_dir = dir.path().join("artifacts");
+
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "--format",
+        "json",
+        "--out-dir",
+        out_dir.to_str().unwrap(),
+        "plan",
+        "--priority",
+        "Top task",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("\"command\": \"plan\""));
+
+    let latest = out_dir.join("latest.json");
+    let latest_contents = fs::read_to_string(&latest).unwrap();
+    assert!(latest_contents.contains("\"command\": \"plan\""));
+
+    let entries: Vec<_> = fs::read_dir(&out_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .collect();
+    assert!(
+        entries
+            .iter()
+            .any(|name| name.starts_with("artifact-") && name.ends_with(".json"))
+    );
+    assert!(entries.iter().any(|name| name == "latest.json"));
+}

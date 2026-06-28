@@ -22,6 +22,21 @@ pub struct RunOutput {
     pub message: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct CheckinInput {
+    pub mood: u8,
+    pub energy: u8,
+    pub friction: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PlanInput {
+    pub priorities: Vec<String>,
+    pub stop: Option<String>,
+    pub effort: EffortLevel,
+    pub focus: Option<String>,
+}
+
 #[derive(Debug, Parser)]
 #[command(name = "new-crate-project", version, about = "A small starter CLI")]
 pub struct Cli {
@@ -30,8 +45,12 @@ pub struct Cli {
     pub format: OutputFormat,
 
     /// Write output to this file for downstream tooling (for example calm-daily-coach)
-    #[arg(long, value_name = "FILE", global = true)]
+    #[arg(long, value_name = "FILE", global = true, conflicts_with = "out_dir")]
     pub out: Option<PathBuf>,
+
+    /// Write output artifacts to this directory (timestamped + latest)
+    #[arg(long, value_name = "DIR", global = true, conflicts_with = "out")]
+    pub out_dir: Option<PathBuf>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -85,13 +104,9 @@ pub enum Commands {
     },
 }
 
-fn compile_plan_message(
-    priorities: &[String],
-    stop: Option<&str>,
-    effort: EffortLevel,
-    focus: Option<&str>,
-) -> String {
-    let mut normalized: Vec<String> = priorities
+pub fn build_day_plan(input: &PlanInput) -> String {
+    let mut normalized: Vec<String> = input
+        .priorities
         .iter()
         .map(|p| p.trim())
         .filter(|p| !p.is_empty())
@@ -103,7 +118,7 @@ fn compile_plan_message(
         normalized.push("Pick one meaningful task and finish it.".to_string());
     }
 
-    let effort_label = match effort {
+    let effort_label = match input.effort {
         EffortLevel::Low => "low",
         EffortLevel::Medium => "medium",
         EffortLevel::High => "high",
@@ -115,30 +130,40 @@ fn compile_plan_message(
     }
     lines.push(format!("Effort: {effort_label}"));
 
-    if let Some(stop_time) = stop.map(str::trim).filter(|s| !s.is_empty()) {
+    if let Some(stop_time) = input
+        .stop
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         lines.push(format!("Stop target: {stop_time}"));
     }
 
-    if let Some(focus_note) = focus.map(str::trim).filter(|s| !s.is_empty()) {
+    if let Some(focus_note) = input
+        .focus
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         lines.push(format!("Focus: {focus_note}"));
     }
 
     lines.join("\n")
 }
 
-fn next_step(mood: u8, energy: u8, friction: Option<&str>) -> String {
-    if energy <= 2 {
+pub fn checkin_suggestion(input: &CheckinInput) -> String {
+    if input.energy <= 2 {
         return "Keep it light: choose one 15-minute task and complete it first.".to_string();
     }
 
-    if let Some(raw) = friction {
+    if let Some(raw) = input.friction.as_deref() {
         let trimmed = raw.trim();
         if !trimmed.is_empty() {
             return format!("Start with a 10-minute unblock step on: {trimmed}.");
         }
     }
 
-    if mood <= 2 {
+    if input.mood <= 2 {
         return "Aim for a small win first, then reassess your plan.".to_string();
     }
 
@@ -167,22 +192,36 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
             mood,
             energy,
             friction,
-        }) => (
-            "checkin".to_string(),
-            format!(
-                "Check-in complete (mood {mood}/5, energy {energy}/5). {}",
-                next_step(mood, energy, friction.as_deref())
-            ),
-        ),
+        }) => {
+            let input = CheckinInput {
+                mood,
+                energy,
+                friction,
+            };
+            (
+                "checkin".to_string(),
+                format!(
+                    "Check-in complete (mood {}/5, energy {}/5). {}",
+                    input.mood,
+                    input.energy,
+                    checkin_suggestion(&input)
+                ),
+            )
+        }
         Some(Commands::Plan {
             priorities,
             stop,
             effort,
             focus,
-        }) => (
-            "plan".to_string(),
-            compile_plan_message(&priorities, stop.as_deref(), effort, focus.as_deref()),
-        ),
+        }) => {
+            let input = PlanInput {
+                priorities,
+                stop,
+                effort,
+                focus,
+            };
+            ("plan".to_string(), build_day_plan(&input))
+        }
         None => (
             "default".to_string(),
             "new-crate-project is ready. Run with --help for usage.".to_string(),
@@ -207,6 +246,7 @@ mod tests {
         Cli {
             format: OutputFormat::Text,
             out: None,
+            out_dir: None,
             command,
         }
     }
@@ -262,66 +302,59 @@ mod tests {
 
     #[test]
     fn checkin_prefers_low_energy_guidance() {
-        let out = run(cli(Some(Commands::Checkin {
+        let suggestion = checkin_suggestion(&CheckinInput {
             mood: 4,
             energy: 2,
             friction: Some("email backlog".to_string()),
-        })))
-        .unwrap();
-        assert_eq!(out.command, "checkin");
-        assert!(out.message.contains("Keep it light"));
+        });
+        assert!(suggestion.contains("Keep it light"));
     }
 
     #[test]
     fn checkin_uses_friction_when_energy_is_ok() {
-        let out = run(cli(Some(Commands::Checkin {
+        let suggestion = checkin_suggestion(&CheckinInput {
             mood: 3,
             energy: 4,
             friction: Some("context switching".to_string()),
-        })))
-        .unwrap();
-        assert!(out.message.contains("context switching"));
+        });
+        assert!(suggestion.contains("context switching"));
     }
 
     #[test]
     fn checkin_uses_small_win_when_mood_is_low() {
-        let out = run(cli(Some(Commands::Checkin {
+        let suggestion = checkin_suggestion(&CheckinInput {
             mood: 1,
             energy: 4,
             friction: None,
-        })))
-        .unwrap();
-        assert!(out.message.contains("small win"));
+        });
+        assert!(suggestion.contains("small win"));
     }
 
     #[test]
     fn checkin_defaults_to_focus_block_when_stable() {
-        let out = run(cli(Some(Commands::Checkin {
+        let suggestion = checkin_suggestion(&CheckinInput {
             mood: 4,
             energy: 4,
             friction: None,
-        })))
-        .unwrap();
-        assert!(out.message.contains("focused 25-minute block"));
+        });
+        assert!(suggestion.contains("focused 25-minute block"));
     }
 
     #[test]
     fn plan_defaults_when_no_priority_provided() {
-        let out = run(cli(Some(Commands::Plan {
+        let message = build_day_plan(&PlanInput {
             priorities: vec![],
             stop: None,
             effort: EffortLevel::Medium,
             focus: None,
-        })))
-        .unwrap();
-        assert_eq!(out.command, "plan");
-        assert!(out.message.contains("Plan ready:"));
-        assert!(out.message.contains("Pick one meaningful task"));
+        });
+        assert!(message.contains("Plan ready:"));
+        assert!(message.contains("Pick one meaningful task"));
     }
 
     #[test]
     fn plan_keeps_only_top_three_priorities() {
-        let out = run(cli(Some(Commands::Plan {
+        let message = build_day_plan(&PlanInput {
             priorities: vec![
                 "A".to_string(),
                 "B".to_string(),
@@ -331,15 +364,14 @@ mod tests {
             stop: Some("17:30".to_string()),
             effort: EffortLevel::High,
             focus: Some("Finish what matters".to_string()),
-        })))
-        .unwrap();
-        assert!(out.message.contains("1. A"));
-        assert!(out.message.contains("2. B"));
-        assert!(out.message.contains("3. C"));
-        assert!(!out.message.contains("D"));
-        assert!(out.message.contains("Effort: high"));
-        assert!(out.message.contains("Stop target: 17:30"));
-        assert!(out.message.contains("Focus: Finish what matters"));
+        });
+        assert!(message.contains("1. A"));
+        assert!(message.contains("2. B"));
+        assert!(message.contains("3. C"));
+        assert!(!message.contains("D"));
+        assert!(message.contains("Effort: high"));
+        assert!(message.contains("Stop target: 17:30"));
+        assert!(message.contains("Focus: Finish what matters"));
     }
 
     #[test]
