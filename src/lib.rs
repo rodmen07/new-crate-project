@@ -1,22 +1,25 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Copy, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum OutputFormat {
     Text,
     Json,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum EffortLevel {
     Low,
     Medium,
     High,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum CheckinStrategy {
     LowEnergy,
     FrictionUnblock,
@@ -24,20 +27,20 @@ pub enum CheckinStrategy {
     FocusBlock,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunOutput {
     pub command: String,
     pub message: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckinInput {
     pub mood: u8,
     pub energy: u8,
     pub friction: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlanInput {
     pub priorities: Vec<String>,
     pub stop: Option<String>,
@@ -45,13 +48,13 @@ pub struct PlanInput {
     pub focus: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckinAdvice {
     pub strategy: CheckinStrategy,
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DayPlan {
     pub priorities: Vec<String>,
     pub effort: EffortLevel,
@@ -466,5 +469,38 @@ mod tests {
         let rendered = render_output(&out, OutputFormat::Json).unwrap();
         assert!(rendered.contains("\"command\": \"greet\""));
         assert!(rendered.contains("\"message\": \"Hello, Rod!\""));
+    }
+
+    #[test]
+    fn serde_round_trip_checkin_advice() {
+        let advice = CheckinAdvice {
+            strategy: CheckinStrategy::FrictionUnblock,
+            message: "Start with a 10-minute unblock step on: task switching.".to_string(),
+        };
+
+        let json = serde_json::to_string(&advice).unwrap();
+        assert!(json.contains("\"strategy\":\"friction_unblock\""));
+
+        let decoded: CheckinAdvice = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.strategy, CheckinStrategy::FrictionUnblock);
+        assert!(decoded.message.contains("task switching"));
+    }
+
+    #[test]
+    fn serde_round_trip_day_plan() {
+        let plan = DayPlan {
+            priorities: vec!["Top task".to_string(), "Second task".to_string()],
+            effort: EffortLevel::High,
+            stop: Some("17:30".to_string()),
+            focus: Some("Keep scope tight".to_string()),
+        };
+
+        let json = serde_json::to_string(&plan).unwrap();
+        assert!(json.contains("\"effort\":\"high\""));
+
+        let decoded: DayPlan = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.effort, EffortLevel::High);
+        assert_eq!(decoded.stop.as_deref(), Some("17:30"));
+        assert_eq!(decoded.priorities.len(), 2);
     }
 }

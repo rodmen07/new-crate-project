@@ -59,6 +59,8 @@ Structured APIs for app integration:
 - `build_day_plan_data(&PlanInput) -> DayPlan` returns normalized priorities and metadata.
 - `build_day_plan(&PlanInput) -> String` remains available for text rendering.
 
+All core domain structs and enums in the library API derive both `Serialize` and `Deserialize`, so app code can round-trip them through JSON without adapter types.
+
 ## Development
 
 - `cargo test`

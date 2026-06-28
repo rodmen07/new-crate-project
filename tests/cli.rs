@@ -206,3 +206,39 @@ fn out_dir_writes_latest_and_timestamped_artifacts() {
     );
     assert!(entries.iter().any(|name| name == "latest.json"));
 }
+
+#[test]
+fn out_dir_writes_text_latest_and_timestamped_artifacts() {
+    let dir = tempfile::tempdir().unwrap();
+    let out_dir = dir.path().join("artifacts");
+
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "--out-dir",
+        out_dir.to_str().unwrap(),
+        "checkin",
+        "--mood",
+        "4",
+        "--energy",
+        "4",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("Check-in complete"));
+
+    let latest = out_dir.join("latest.txt");
+    let latest_contents = fs::read_to_string(&latest).unwrap();
+    assert!(latest_contents.contains("Check-in complete"));
+
+    let entries: Vec<_> = fs::read_dir(&out_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .collect();
+    assert!(
+        entries
+            .iter()
+            .any(|name| name.starts_with("artifact-") && name.ends_with(".txt"))
+    );
+    assert!(entries.iter().any(|name| name == "latest.txt"));
+}
