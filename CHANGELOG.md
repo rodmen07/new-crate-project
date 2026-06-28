@@ -11,3 +11,4 @@ and this project follows Semantic Versioning.
 
 - End-to-end CLI integration tests covering default invocation and `greet` output.
 - `sum` CLI subcommand for adding integer values.
+- `greet --uppercase` option for emphasized greeting output.

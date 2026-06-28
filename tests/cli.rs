@@ -19,6 +19,15 @@ fn greet_subcommand_prints_name() {
 }
 
 #[test]
+fn greet_subcommand_uppercase_prints_shouty_message() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args(["greet", "--name", "Copilot", "--uppercase"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("HELLO, COPILOT!"));
+}
+
+#[test]
 fn sum_subcommand_prints_total() {
     let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
     cmd.args(["sum", "10", "-3", "4"])

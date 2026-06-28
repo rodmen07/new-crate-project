@@ -15,6 +15,9 @@ pub enum Commands {
         /// Name to greet
         #[arg(short, long, default_value = "world")]
         name: String,
+        /// Print the greeting in uppercase
+        #[arg(long)]
+        uppercase: bool,
     },
     /// Add integer values and print the total
     Sum {
@@ -26,7 +29,14 @@ pub enum Commands {
 
 pub fn run(cli: Cli) -> Result<String> {
     let output = match cli.command {
-        Some(Commands::Greet { name }) => format!("Hello, {name}!"),
+        Some(Commands::Greet { name, uppercase }) => {
+            let greeting = format!("Hello, {name}!");
+            if uppercase {
+                greeting.to_uppercase()
+            } else {
+                greeting
+            }
+        }
         Some(Commands::Sum { values }) => {
             let total: i64 = values.iter().sum();
             total.to_string()
@@ -45,10 +55,23 @@ mod tests {
         let out = run(Cli {
             command: Some(Commands::Greet {
                 name: "Rod".to_string(),
+                uppercase: false,
             }),
         })
         .unwrap();
         assert_eq!(out, "Hello, Rod!");
+    }
+
+    #[test]
+    fn greet_command_uppercase_formats_message() {
+        let out = run(Cli {
+            command: Some(Commands::Greet {
+                name: "Rod".to_string(),
+                uppercase: true,
+            }),
+        })
+        .unwrap();
+        assert_eq!(out, "HELLO, ROD!");
     }
 
     #[test]
