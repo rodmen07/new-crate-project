@@ -16,3 +16,4 @@ and this project follows Semantic Versioning.
 - `version` subcommand for printing the crate version.
 - `checkin` subcommand with mood and energy prompts plus a next-step suggestion.
 - `plan` subcommand that compiles up to three priorities into a practical day plan.
+- Global `--out <file>` option to persist CLI output for app-side consumption.

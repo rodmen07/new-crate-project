@@ -14,6 +14,11 @@ This crate is evolving into a practical companion utility for calm-daily-coach.
 - `new-crate-project checkin --mood <1-5> --energy <1-5> [--friction <note>]` prints a practical next-step suggestion.
 - `new-crate-project plan --priority <text> [--priority <text>] [--stop <HH:MM>] [--effort <low|medium|high>] [--focus <text>]` compiles a practical day plan.
 - `--format json` emits structured JSON (`command`, `message`) instead of plain text.
+- `--out <file>` writes the rendered output to disk so calm-daily-coach (or scripts) can read it.
+
+### Tandem Usage Example
+
+`new-crate-project --format json --out artifacts/latest-checkin.json checkin --mood 3 --energy 4 --friction "task switching"`
 
 ## Development
 

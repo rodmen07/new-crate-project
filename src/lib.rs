@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use serde::Serialize;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum OutputFormat {
@@ -27,6 +28,10 @@ pub struct Cli {
     /// Select output format
     #[arg(long, value_enum, default_value_t = OutputFormat::Text, global = true)]
     pub format: OutputFormat,
+
+    /// Write output to this file for downstream tooling (for example calm-daily-coach)
+    #[arg(long, value_name = "FILE", global = true)]
+    pub out: Option<PathBuf>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -198,15 +203,20 @@ pub fn render_output(out: &RunOutput, format: OutputFormat) -> Result<String> {
 mod tests {
     use super::*;
 
+    fn cli(command: Option<Commands>) -> Cli {
+        Cli {
+            format: OutputFormat::Text,
+            out: None,
+            command,
+        }
+    }
+
     #[test]
     fn greet_command_formats_message() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Greet {
-                name: "Rod".to_string(),
-                uppercase: false,
-            }),
-        })
+        let out = run(cli(Some(Commands::Greet {
+            name: "Rod".to_string(),
+            uppercase: false,
+        })))
         .unwrap();
         assert_eq!(out.message, "Hello, Rod!");
         assert_eq!(out.command, "greet");
@@ -214,70 +224,49 @@ mod tests {
 
     #[test]
     fn greet_command_uppercase_formats_message() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Greet {
-                name: "Rod".to_string(),
-                uppercase: true,
-            }),
-        })
+        let out = run(cli(Some(Commands::Greet {
+            name: "Rod".to_string(),
+            uppercase: true,
+        })))
         .unwrap();
         assert_eq!(out.message, "HELLO, ROD!");
     }
 
     #[test]
     fn default_message_without_subcommand() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: None,
-        })
-        .unwrap();
+        let out = run(cli(None)).unwrap();
         assert!(out.message.contains("ready"));
     }
 
     #[test]
     fn sum_command_adds_values() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Sum {
-                values: vec![2, 3, 5],
-            }),
-        })
+        let out = run(cli(Some(Commands::Sum {
+            values: vec![2, 3, 5],
+        })))
         .unwrap();
         assert_eq!(out.message, "10");
     }
 
     #[test]
     fn sum_command_with_no_values_returns_zero() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Sum { values: vec![] }),
-        })
-        .unwrap();
+        let out = run(cli(Some(Commands::Sum { values: vec![] }))).unwrap();
         assert_eq!(out.message, "0");
     }
 
     #[test]
     fn version_command_prints_package_version() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Version),
-        })
-        .unwrap();
+        let out = run(cli(Some(Commands::Version))).unwrap();
         assert_eq!(out.command, "version");
         assert_eq!(out.message, env!("CARGO_PKG_VERSION"));
     }
 
     #[test]
     fn checkin_prefers_low_energy_guidance() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Checkin {
-                mood: 4,
-                energy: 2,
-                friction: Some("email backlog".to_string()),
-            }),
-        })
+        let out = run(cli(Some(Commands::Checkin {
+            mood: 4,
+            energy: 2,
+            friction: Some("email backlog".to_string()),
+        })))
         .unwrap();
         assert_eq!(out.command, "checkin");
         assert!(out.message.contains("Keep it light"));
@@ -285,57 +274,45 @@ mod tests {
 
     #[test]
     fn checkin_uses_friction_when_energy_is_ok() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Checkin {
-                mood: 3,
-                energy: 4,
-                friction: Some("context switching".to_string()),
-            }),
-        })
+        let out = run(cli(Some(Commands::Checkin {
+            mood: 3,
+            energy: 4,
+            friction: Some("context switching".to_string()),
+        })))
         .unwrap();
         assert!(out.message.contains("context switching"));
     }
 
     #[test]
     fn checkin_uses_small_win_when_mood_is_low() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Checkin {
-                mood: 1,
-                energy: 4,
-                friction: None,
-            }),
-        })
+        let out = run(cli(Some(Commands::Checkin {
+            mood: 1,
+            energy: 4,
+            friction: None,
+        })))
         .unwrap();
         assert!(out.message.contains("small win"));
     }
 
     #[test]
     fn checkin_defaults_to_focus_block_when_stable() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Checkin {
-                mood: 4,
-                energy: 4,
-                friction: None,
-            }),
-        })
+        let out = run(cli(Some(Commands::Checkin {
+            mood: 4,
+            energy: 4,
+            friction: None,
+        })))
         .unwrap();
         assert!(out.message.contains("focused 25-minute block"));
     }
 
     #[test]
     fn plan_defaults_when_no_priority_provided() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Plan {
-                priorities: vec![],
-                stop: None,
-                effort: EffortLevel::Medium,
-                focus: None,
-            }),
-        })
+        let out = run(cli(Some(Commands::Plan {
+            priorities: vec![],
+            stop: None,
+            effort: EffortLevel::Medium,
+            focus: None,
+        })))
         .unwrap();
         assert_eq!(out.command, "plan");
         assert!(out.message.contains("Plan ready:"));
@@ -344,20 +321,17 @@ mod tests {
 
     #[test]
     fn plan_keeps_only_top_three_priorities() {
-        let out = run(Cli {
-            format: OutputFormat::Text,
-            command: Some(Commands::Plan {
-                priorities: vec![
-                    "A".to_string(),
-                    "B".to_string(),
-                    "C".to_string(),
-                    "D".to_string(),
-                ],
-                stop: Some("17:30".to_string()),
-                effort: EffortLevel::High,
-                focus: Some("Finish what matters".to_string()),
-            }),
-        })
+        let out = run(cli(Some(Commands::Plan {
+            priorities: vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string(),
+                "D".to_string(),
+            ],
+            stop: Some("17:30".to_string()),
+            effort: EffortLevel::High,
+            focus: Some("Finish what matters".to_string()),
+        })))
         .unwrap();
         assert!(out.message.contains("1. A"));
         assert!(out.message.contains("2. B"));

@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use std::fs;
 
 #[test]
 fn default_invocation_prints_readiness_message() {
@@ -143,4 +144,29 @@ fn plan_subcommand_supports_json_output() {
     .success()
     .stdout(predicate::str::contains("\"command\": \"plan\""))
     .stdout(predicate::str::contains("Top task"));
+}
+
+#[test]
+fn out_flag_writes_json_artifact_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let out_file = dir.path().join("latest.json");
+
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "--format",
+        "json",
+        "--out",
+        out_file.to_str().unwrap(),
+        "checkin",
+        "--mood",
+        "4",
+        "--energy",
+        "4",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("\"command\": \"checkin\""));
+
+    let file_contents = fs::read_to_string(out_file).unwrap();
+    assert!(file_contents.contains("\"command\": \"checkin\""));
 }
