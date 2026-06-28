@@ -66,6 +66,13 @@ All core domain structs and enums in the library API derive both `Serialize` and
 - `cargo test`
 - `cargo clippy --all-targets --all-features -- -D warnings`
 
+## Examples
+
+- `cargo run --example checkin_pipeline`
+- `cargo run --example plan_pipeline`
+
+These examples show how to keep typed domain data for app state while still rendering user-facing text where needed.
+
 ## Project Hygiene
 
 - CI workflow at `.github/workflows/ci.yml` runs fmt, clippy, and tests.
