@@ -14,3 +14,4 @@ and this project follows Semantic Versioning.
 - `greet --uppercase` option for emphasized greeting output.
 - Global `--format text|json` output mode for CLI responses.
 - `version` subcommand for printing the crate version.
+- `checkin` subcommand with mood and energy prompts plus a next-step suggestion.

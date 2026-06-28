@@ -73,3 +73,33 @@ fn version_subcommand_prints_version_json() {
         .stdout(predicate::str::contains("\"command\": \"version\""))
         .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
 }
+
+#[test]
+fn checkin_subcommand_prints_guidance() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "checkin",
+        "--mood",
+        "3",
+        "--energy",
+        "4",
+        "--friction",
+        "task switching",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("Check-in complete"))
+    .stdout(predicate::str::contains("task switching"));
+}
+
+#[test]
+fn checkin_subcommand_supports_json_output() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "--format", "json", "checkin", "--mood", "4", "--energy", "2",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("\"command\": \"checkin\""))
+    .stdout(predicate::str::contains("Keep it light"));
+}

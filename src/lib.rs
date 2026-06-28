@@ -44,6 +44,37 @@ pub enum Commands {
     },
     /// Print the crate version
     Version,
+    /// Record a quick check-in and get a suggested next step
+    Checkin {
+        /// Mood score from 1 (low) to 5 (high)
+        #[arg(long, value_parser = clap::value_parser!(u8).range(1..=5))]
+        mood: u8,
+        /// Energy score from 1 (low) to 5 (high)
+        #[arg(long, value_parser = clap::value_parser!(u8).range(1..=5))]
+        energy: u8,
+        /// Optional friction note describing a blocker
+        #[arg(long)]
+        friction: Option<String>,
+    },
+}
+
+fn next_step(mood: u8, energy: u8, friction: Option<&str>) -> String {
+    if energy <= 2 {
+        return "Keep it light: choose one 15-minute task and complete it first.".to_string();
+    }
+
+    if let Some(raw) = friction {
+        let trimmed = raw.trim();
+        if !trimmed.is_empty() {
+            return format!("Start with a 10-minute unblock step on: {trimmed}.");
+        }
+    }
+
+    if mood <= 2 {
+        return "Aim for a small win first, then reassess your plan.".to_string();
+    }
+
+    "Pick your top priority and run one focused 25-minute block.".to_string()
 }
 
 pub fn run(cli: Cli) -> Result<RunOutput> {
@@ -64,6 +95,17 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
             ("sum".to_string(), total.to_string())
         }
         Some(Commands::Version) => ("version".to_string(), env!("CARGO_PKG_VERSION").to_string()),
+        Some(Commands::Checkin {
+            mood,
+            energy,
+            friction,
+        }) => (
+            "checkin".to_string(),
+            format!(
+                "Check-in complete (mood {mood}/5, energy {energy}/5). {}",
+                next_step(mood, energy, friction.as_deref())
+            ),
+        ),
         None => (
             "default".to_string(),
             "new-crate-project is ready. Run with --help for usage.".to_string(),
@@ -152,6 +194,63 @@ mod tests {
         .unwrap();
         assert_eq!(out.command, "version");
         assert_eq!(out.message, env!("CARGO_PKG_VERSION"));
+    }
+
+    #[test]
+    fn checkin_prefers_low_energy_guidance() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Checkin {
+                mood: 4,
+                energy: 2,
+                friction: Some("email backlog".to_string()),
+            }),
+        })
+        .unwrap();
+        assert_eq!(out.command, "checkin");
+        assert!(out.message.contains("Keep it light"));
+    }
+
+    #[test]
+    fn checkin_uses_friction_when_energy_is_ok() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Checkin {
+                mood: 3,
+                energy: 4,
+                friction: Some("context switching".to_string()),
+            }),
+        })
+        .unwrap();
+        assert!(out.message.contains("context switching"));
+    }
+
+    #[test]
+    fn checkin_uses_small_win_when_mood_is_low() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Checkin {
+                mood: 1,
+                energy: 4,
+                friction: None,
+            }),
+        })
+        .unwrap();
+        assert!(out.message.contains("small win"));
+    }
+
+    #[test]
+    fn checkin_defaults_to_focus_block_when_stable() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Checkin {
+                mood: 4,
+                energy: 4,
+                friction: None,
+            }),
+        })
+        .unwrap();
+        assert!(out.message.contains("focused 25-minute block"));
     }
 
     #[test]
