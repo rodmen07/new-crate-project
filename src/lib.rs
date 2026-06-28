@@ -19,6 +19,7 @@ pub enum Commands {
     /// Add integer values and print the total
     Sum {
         /// Values to add together
+        #[arg(allow_hyphen_values = true)]
         values: Vec<i64>,
     },
 }
