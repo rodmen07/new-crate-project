@@ -42,6 +42,8 @@ pub enum Commands {
         #[arg(allow_hyphen_values = true)]
         values: Vec<i64>,
     },
+    /// Print the crate version
+    Version,
 }
 
 pub fn run(cli: Cli) -> Result<RunOutput> {
@@ -61,6 +63,7 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
             let total: i64 = values.iter().sum();
             ("sum".to_string(), total.to_string())
         }
+        Some(Commands::Version) => ("version".to_string(), env!("CARGO_PKG_VERSION").to_string()),
         None => (
             "default".to_string(),
             "new-crate-project is ready. Run with --help for usage.".to_string(),
@@ -138,6 +141,17 @@ mod tests {
         })
         .unwrap();
         assert_eq!(out.message, "0");
+    }
+
+    #[test]
+    fn version_command_prints_package_version() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Version),
+        })
+        .unwrap();
+        assert_eq!(out.command, "version");
+        assert_eq!(out.message, env!("CARGO_PKG_VERSION"));
     }
 
     #[test]

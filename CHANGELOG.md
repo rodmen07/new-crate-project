@@ -13,3 +13,4 @@ and this project follows Semantic Versioning.
 - `sum` CLI subcommand for adding integer values.
 - `greet --uppercase` option for emphasized greeting output.
 - Global `--format text|json` output mode for CLI responses.
+- `version` subcommand for printing the crate version.

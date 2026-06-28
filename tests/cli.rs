@@ -54,3 +54,22 @@ fn json_output_mode_prints_structured_response() {
         .stdout(predicate::str::contains("\"command\": \"greet\""))
         .stdout(predicate::str::contains("\"message\": \"Hello, Copilot!\""));
 }
+
+#[test]
+fn version_subcommand_prints_version_text() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args(["version"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
+}
+
+#[test]
+fn version_subcommand_prints_version_json() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args(["--format", "json", "version"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"command\": \"version\""))
+        .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
+}
