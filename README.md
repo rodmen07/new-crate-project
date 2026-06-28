@@ -29,7 +29,7 @@ It can be used both as a CLI and as a Rust library directly inside app code.
 
 ```rust
 use new_crate_project::{
-	build_day_plan, checkin_suggestion, CheckinInput, EffortLevel, PlanInput,
+	build_day_plan_data, checkin_advice, CheckinInput, EffortLevel, PlanInput,
 };
 
 let checkin = CheckinInput {
@@ -37,7 +37,7 @@ let checkin = CheckinInput {
 	energy: 4,
 	friction: Some("task switching".to_string()),
 };
-let suggestion = checkin_suggestion(&checkin);
+let advice = checkin_advice(&checkin);
 
 let plan = PlanInput {
 	priorities: vec!["Ship one small feature".into(), "Write reflection".into()],
@@ -45,8 +45,17 @@ let plan = PlanInput {
 	effort: EffortLevel::Medium,
 	focus: Some("Keep scope tight".into()),
 };
-let day_plan = build_day_plan(&plan);
+let day_plan = build_day_plan_data(&plan);
+
+assert_eq!(advice.strategy as u8, advice.strategy as u8); // use strategy for app-side branching
+assert!(!day_plan.priorities.is_empty());
 ```
+
+Structured APIs for app integration:
+
+- `checkin_advice(&CheckinInput) -> CheckinAdvice` returns `strategy` + `message`.
+- `build_day_plan_data(&PlanInput) -> DayPlan` returns normalized priorities and metadata.
+- `build_day_plan(&PlanInput) -> String` remains available for text rendering.
 
 ## Development
 

@@ -9,11 +9,19 @@ pub enum OutputFormat {
     Json,
 }
 
-#[derive(Debug, Clone, Copy, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Serialize)]
 pub enum EffortLevel {
     Low,
     Medium,
     High,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum CheckinStrategy {
+    LowEnergy,
+    FrictionUnblock,
+    LowMood,
+    FocusBlock,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -34,6 +42,20 @@ pub struct PlanInput {
     pub priorities: Vec<String>,
     pub stop: Option<String>,
     pub effort: EffortLevel,
+    pub focus: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CheckinAdvice {
+    pub strategy: CheckinStrategy,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DayPlan {
+    pub priorities: Vec<String>,
+    pub effort: EffortLevel,
+    pub stop: Option<String>,
     pub focus: Option<String>,
 }
 
@@ -104,7 +126,7 @@ pub enum Commands {
     },
 }
 
-pub fn build_day_plan(input: &PlanInput) -> String {
+pub fn build_day_plan_data(input: &PlanInput) -> DayPlan {
     let mut normalized: Vec<String> = input
         .priorities
         .iter()
@@ -118,56 +140,93 @@ pub fn build_day_plan(input: &PlanInput) -> String {
         normalized.push("Pick one meaningful task and finish it.".to_string());
     }
 
-    let effort_label = match input.effort {
+    DayPlan {
+        priorities: normalized,
+        effort: input.effort,
+        stop: input
+            .stop
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+        focus: input
+            .focus
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+    }
+}
+
+pub fn render_day_plan(plan: &DayPlan) -> String {
+    let DayPlan {
+        priorities,
+        effort,
+        stop,
+        focus,
+    } = plan;
+
+    let effort_label = match effort {
         EffortLevel::Low => "low",
         EffortLevel::Medium => "medium",
         EffortLevel::High => "high",
     };
 
     let mut lines = vec!["Plan ready:".to_string()];
-    for (idx, item) in normalized.iter().enumerate() {
+    for (idx, item) in priorities.iter().enumerate() {
         lines.push(format!("{}. {item}", idx + 1));
     }
     lines.push(format!("Effort: {effort_label}"));
 
-    if let Some(stop_time) = input
-        .stop
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-    {
+    if let Some(stop_time) = stop {
         lines.push(format!("Stop target: {stop_time}"));
     }
 
-    if let Some(focus_note) = input
-        .focus
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-    {
+    if let Some(focus_note) = focus {
         lines.push(format!("Focus: {focus_note}"));
     }
 
     lines.join("\n")
 }
 
-pub fn checkin_suggestion(input: &CheckinInput) -> String {
+pub fn build_day_plan(input: &PlanInput) -> String {
+    let plan = build_day_plan_data(input);
+    render_day_plan(&plan)
+}
+
+pub fn checkin_advice(input: &CheckinInput) -> CheckinAdvice {
     if input.energy <= 2 {
-        return "Keep it light: choose one 15-minute task and complete it first.".to_string();
+        return CheckinAdvice {
+            strategy: CheckinStrategy::LowEnergy,
+            message: "Keep it light: choose one 15-minute task and complete it first.".to_string(),
+        };
     }
 
     if let Some(raw) = input.friction.as_deref() {
         let trimmed = raw.trim();
         if !trimmed.is_empty() {
-            return format!("Start with a 10-minute unblock step on: {trimmed}.");
+            return CheckinAdvice {
+                strategy: CheckinStrategy::FrictionUnblock,
+                message: format!("Start with a 10-minute unblock step on: {trimmed}."),
+            };
         }
     }
 
     if input.mood <= 2 {
-        return "Aim for a small win first, then reassess your plan.".to_string();
+        return CheckinAdvice {
+            strategy: CheckinStrategy::LowMood,
+            message: "Aim for a small win first, then reassess your plan.".to_string(),
+        };
     }
 
-    "Pick your top priority and run one focused 25-minute block.".to_string()
+    CheckinAdvice {
+        strategy: CheckinStrategy::FocusBlock,
+        message: "Pick your top priority and run one focused 25-minute block.".to_string(),
+    }
+}
+
+pub fn checkin_suggestion(input: &CheckinInput) -> String {
+    checkin_advice(input).message
 }
 
 pub fn run(cli: Cli) -> Result<RunOutput> {
@@ -198,13 +257,12 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
                 energy,
                 friction,
             };
+            let advice = checkin_advice(&input);
             (
                 "checkin".to_string(),
                 format!(
                     "Check-in complete (mood {}/5, energy {}/5). {}",
-                    input.mood,
-                    input.energy,
-                    checkin_suggestion(&input)
+                    input.mood, input.energy, advice.message
                 ),
             )
         }
@@ -302,41 +360,53 @@ mod tests {
 
     #[test]
     fn checkin_prefers_low_energy_guidance() {
-        let suggestion = checkin_suggestion(&CheckinInput {
+        let input = CheckinInput {
             mood: 4,
             energy: 2,
             friction: Some("email backlog".to_string()),
-        });
+        };
+        let advice = checkin_advice(&input);
+        assert_eq!(advice.strategy, CheckinStrategy::LowEnergy);
+        let suggestion = checkin_suggestion(&input);
         assert!(suggestion.contains("Keep it light"));
     }
 
     #[test]
     fn checkin_uses_friction_when_energy_is_ok() {
-        let suggestion = checkin_suggestion(&CheckinInput {
+        let input = CheckinInput {
             mood: 3,
             energy: 4,
             friction: Some("context switching".to_string()),
-        });
+        };
+        let advice = checkin_advice(&input);
+        assert_eq!(advice.strategy, CheckinStrategy::FrictionUnblock);
+        let suggestion = checkin_suggestion(&input);
         assert!(suggestion.contains("context switching"));
     }
 
     #[test]
     fn checkin_uses_small_win_when_mood_is_low() {
-        let suggestion = checkin_suggestion(&CheckinInput {
+        let input = CheckinInput {
             mood: 1,
             energy: 4,
             friction: None,
-        });
+        };
+        let advice = checkin_advice(&input);
+        assert_eq!(advice.strategy, CheckinStrategy::LowMood);
+        let suggestion = checkin_suggestion(&input);
         assert!(suggestion.contains("small win"));
     }
 
     #[test]
     fn checkin_defaults_to_focus_block_when_stable() {
-        let suggestion = checkin_suggestion(&CheckinInput {
+        let input = CheckinInput {
             mood: 4,
             energy: 4,
             friction: None,
-        });
+        };
+        let advice = checkin_advice(&input);
+        assert_eq!(advice.strategy, CheckinStrategy::FocusBlock);
+        let suggestion = checkin_suggestion(&input);
         assert!(suggestion.contains("focused 25-minute block"));
     }
 
@@ -372,6 +442,19 @@ mod tests {
         assert!(message.contains("Effort: high"));
         assert!(message.contains("Stop target: 17:30"));
         assert!(message.contains("Focus: Finish what matters"));
+    }
+
+    #[test]
+    fn plan_data_returns_normalized_struct() {
+        let plan = build_day_plan_data(&PlanInput {
+            priorities: vec![" Top ".to_string(), "".to_string(), "Next".to_string()],
+            stop: Some(" 17:30 ".to_string()),
+            effort: EffortLevel::Medium,
+            focus: Some(" Keep scope tight ".to_string()),
+        });
+        assert_eq!(plan.priorities, vec!["Top".to_string(), "Next".to_string()]);
+        assert_eq!(plan.stop, Some("17:30".to_string()));
+        assert_eq!(plan.focus, Some("Keep scope tight".to_string()));
     }
 
     #[test]

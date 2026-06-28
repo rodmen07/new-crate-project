@@ -19,3 +19,4 @@ and this project follows Semantic Versioning.
 - Global `--out <file>` option to persist CLI output for app-side consumption.
 - Global `--out-dir <dir>` option that writes timestamped artifacts plus a stable `latest` file.
 - Library-first APIs (`CheckinInput`, `PlanInput`, `checkin_suggestion`, `build_day_plan`) for direct app integration.
+- Typed structured APIs: `CheckinAdvice` with `CheckinStrategy`, plus `DayPlan` via `build_day_plan_data`.
