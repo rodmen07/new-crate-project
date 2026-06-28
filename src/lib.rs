@@ -8,6 +8,13 @@ pub enum OutputFormat {
     Json,
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum EffortLevel {
+    Low,
+    Medium,
+    High,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct RunOutput {
     pub command: String,
@@ -56,6 +63,62 @@ pub enum Commands {
         #[arg(long)]
         friction: Option<String>,
     },
+    /// Compile a practical day plan from your priorities
+    Plan {
+        /// Priority item (repeat up to 3)
+        #[arg(long = "priority")]
+        priorities: Vec<String>,
+        /// Optional stop time goal (for example 17:30)
+        #[arg(long)]
+        stop: Option<String>,
+        /// Intended effort for the day
+        #[arg(long, value_enum, default_value_t = EffortLevel::Medium)]
+        effort: EffortLevel,
+        /// Optional focus note for today's intent
+        #[arg(long)]
+        focus: Option<String>,
+    },
+}
+
+fn compile_plan_message(
+    priorities: &[String],
+    stop: Option<&str>,
+    effort: EffortLevel,
+    focus: Option<&str>,
+) -> String {
+    let mut normalized: Vec<String> = priorities
+        .iter()
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .take(3)
+        .map(str::to_string)
+        .collect();
+
+    if normalized.is_empty() {
+        normalized.push("Pick one meaningful task and finish it.".to_string());
+    }
+
+    let effort_label = match effort {
+        EffortLevel::Low => "low",
+        EffortLevel::Medium => "medium",
+        EffortLevel::High => "high",
+    };
+
+    let mut lines = vec!["Plan ready:".to_string()];
+    for (idx, item) in normalized.iter().enumerate() {
+        lines.push(format!("{}. {item}", idx + 1));
+    }
+    lines.push(format!("Effort: {effort_label}"));
+
+    if let Some(stop_time) = stop.map(str::trim).filter(|s| !s.is_empty()) {
+        lines.push(format!("Stop target: {stop_time}"));
+    }
+
+    if let Some(focus_note) = focus.map(str::trim).filter(|s| !s.is_empty()) {
+        lines.push(format!("Focus: {focus_note}"));
+    }
+
+    lines.join("\n")
 }
 
 fn next_step(mood: u8, energy: u8, friction: Option<&str>) -> String {
@@ -105,6 +168,15 @@ pub fn run(cli: Cli) -> Result<RunOutput> {
                 "Check-in complete (mood {mood}/5, energy {energy}/5). {}",
                 next_step(mood, energy, friction.as_deref())
             ),
+        ),
+        Some(Commands::Plan {
+            priorities,
+            stop,
+            effort,
+            focus,
+        }) => (
+            "plan".to_string(),
+            compile_plan_message(&priorities, stop.as_deref(), effort, focus.as_deref()),
         ),
         None => (
             "default".to_string(),
@@ -251,6 +323,49 @@ mod tests {
         })
         .unwrap();
         assert!(out.message.contains("focused 25-minute block"));
+    }
+
+    #[test]
+    fn plan_defaults_when_no_priority_provided() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Plan {
+                priorities: vec![],
+                stop: None,
+                effort: EffortLevel::Medium,
+                focus: None,
+            }),
+        })
+        .unwrap();
+        assert_eq!(out.command, "plan");
+        assert!(out.message.contains("Plan ready:"));
+        assert!(out.message.contains("Pick one meaningful task"));
+    }
+
+    #[test]
+    fn plan_keeps_only_top_three_priorities() {
+        let out = run(Cli {
+            format: OutputFormat::Text,
+            command: Some(Commands::Plan {
+                priorities: vec![
+                    "A".to_string(),
+                    "B".to_string(),
+                    "C".to_string(),
+                    "D".to_string(),
+                ],
+                stop: Some("17:30".to_string()),
+                effort: EffortLevel::High,
+                focus: Some("Finish what matters".to_string()),
+            }),
+        })
+        .unwrap();
+        assert!(out.message.contains("1. A"));
+        assert!(out.message.contains("2. B"));
+        assert!(out.message.contains("3. C"));
+        assert!(!out.message.contains("D"));
+        assert!(out.message.contains("Effort: high"));
+        assert!(out.message.contains("Stop target: 17:30"));
+        assert!(out.message.contains("Focus: Finish what matters"));
     }
 
     #[test]

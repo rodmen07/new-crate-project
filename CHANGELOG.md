@@ -15,3 +15,4 @@ and this project follows Semantic Versioning.
 - Global `--format text|json` output mode for CLI responses.
 - `version` subcommand for printing the crate version.
 - `checkin` subcommand with mood and energy prompts plus a next-step suggestion.
+- `plan` subcommand that compiles up to three priorities into a practical day plan.

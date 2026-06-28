@@ -103,3 +103,44 @@ fn checkin_subcommand_supports_json_output() {
     .stdout(predicate::str::contains("\"command\": \"checkin\""))
     .stdout(predicate::str::contains("Keep it light"));
 }
+
+#[test]
+fn plan_subcommand_builds_day_plan() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "plan",
+        "--priority",
+        "Write reflection",
+        "--priority",
+        "Ship one small feature",
+        "--stop",
+        "17:30",
+        "--effort",
+        "medium",
+        "--focus",
+        "Keep scope tight",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("Plan ready:"))
+    .stdout(predicate::str::contains("Write reflection"))
+    .stdout(predicate::str::contains("Stop target: 17:30"));
+}
+
+#[test]
+fn plan_subcommand_supports_json_output() {
+    let mut cmd = Command::cargo_bin("new-crate-project").unwrap();
+    cmd.args([
+        "--format",
+        "json",
+        "plan",
+        "--priority",
+        "Top task",
+        "--effort",
+        "low",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("\"command\": \"plan\""))
+    .stdout(predicate::str::contains("Top task"));
+}
